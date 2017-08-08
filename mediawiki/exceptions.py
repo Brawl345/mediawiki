@@ -79,7 +79,7 @@ class DisambiguationError(MediaWikiBaseException):
 
     def __init__(self, title, may_refer_to, details=None):
         self.title = title
-        self.options = sorted(may_refer_to)
+        self.options = may_refer_to
         self.details = details
         msg = ('\n"{0}" may refer to: \n  '
                '{1}').format(self.title, '\n  '.join(self.options))
