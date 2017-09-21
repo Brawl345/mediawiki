@@ -16,7 +16,7 @@ setuptools.setup(
     keywords = 'python mediawiki wikipedia API wiki parse',
     url = __url__,
     download_url = '{0}/tarball/v{1}'.format(__url__, __version__),
-    install_requires = ['beautifulsoup4', 'requests>=2.0.0,<3.0.0'],
+    install_requires = ['beautifulsoup4', 'requests'],
     packages = ['mediawiki'],
     long_description = open('README.rst', 'r').read(),
     classifiers = [
