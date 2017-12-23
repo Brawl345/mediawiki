@@ -571,7 +571,7 @@ class MediaWikiPage(object):
                 # these are non-linked records so double up the text
                 one_disambiguation['title'] = lis_item.text
             disambiguation.append(one_disambiguation)
-        raise DisambiguationError(getattr(self, 'title', page['title']),
+        raise DisambiguationError(page['fullurl'], getattr(self, 'title', page['title']),
                                   may_refer_to,
                                   disambiguation)
 

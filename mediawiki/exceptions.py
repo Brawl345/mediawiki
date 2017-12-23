@@ -77,7 +77,8 @@ class DisambiguationError(MediaWikiBaseException):
     .. note:: `options` only includes titles that link to valid \
     MediaWiki pages '''
 
-    def __init__(self, title, may_refer_to, details=None):
+    def __init__(self, fullurl, title, may_refer_to, details=None):
+        self.fullurl = fullurl
         self.title = title
         self.options = may_refer_to
         self.details = details
