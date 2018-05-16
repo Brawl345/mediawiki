@@ -20,9 +20,10 @@ from .utilities import find_depth, FunctionUseCounter
 
 class MediaWikiOverloaded(MediaWiki):
     ''' Overload the MediaWiki class to change how wiki_request works '''
-    def __init__(self, url='http://{lang}.wikipedia.org/w/api.php', lang='en',
-                 timeout=None, rate_limit=False,
-                 rate_limit_wait=timedelta(milliseconds=50)):
+    def __init__(self, url='https://{lang}.wikipedia.org/w/api.php', lang='en',
+                 timeout=15, rate_limit=False,
+                 rate_limit_wait=timedelta(milliseconds=50),
+                 cat_prefix='Category', user_agent=None):
         ''' new init '''
 
         with open('./tests/mock_requests.json', 'r') as file_handle:
@@ -51,7 +52,7 @@ class TestMediaWiki(unittest.TestCase):
     def test_api_url(self):
         ''' test the original api '''
         site = MediaWikiOverloaded()
-        self.assertEqual(site.api_url, 'http://en.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://en.wikipedia.org/w/api.php')
 
     def test_base_url(self):
         ''' test that the base url is parsed correctly '''
@@ -76,34 +77,34 @@ class TestMediaWiki(unittest.TestCase):
         response = site.responses[site.api_url]
         self.assertEqual(site.api_url, 'http://awoiaf.westeros.org/api.php')
         self.assertEqual(site.api_version, response['api_version'])
-        self.assertEqual(site.extensions, response['extensions'])
+        self.assertEqual(sorted(site.extensions), sorted(response['extensions']))
 
     def test_change_lang(self):
         ''' test changing the language '''
         site = MediaWikiOverloaded()
         site.language = 'FR'
         self.assertEqual(site.language, 'fr')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
 
     def test_change_lang_same(self):
         ''' test changing the language to the same lang '''
-        site = MediaWikiOverloaded(url='http://fr.wikipedia.org/w/api.php',
+        site = MediaWikiOverloaded(url='https://fr.wikipedia.org/w/api.php',
                                    lang='fr')
         site.language = 'FR'
         self.assertEqual(site.language, 'fr')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
 
     def test_api_lang_no_url(self):
         ''' test setting the language on init without api_url '''
         site = MediaWikiOverloaded(lang='fr')
         self.assertEqual(site.language, 'fr')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
 
     def test_api_lang_no_url_upper(self):
         ''' test setting the language on init without api_url upper case '''
         site = MediaWikiOverloaded(lang='FR')
         self.assertEqual(site.language, 'fr')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
 
     def test_change_lang_no_change(self):
         ''' test changing the language when url will not change '''
@@ -128,30 +129,30 @@ class TestMediaWiki(unittest.TestCase):
         ''' test switching the api url '''
         site = MediaWikiOverloaded()
         response = site.responses[site.api_url]
-        self.assertEqual(site.api_url, 'http://en.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://en.wikipedia.org/w/api.php')
         self.assertEqual(site.api_version, response['api_version'])
-        self.assertEqual(site.extensions, response['extensions'])
+        self.assertEqual(sorted(site.extensions), sorted(response['extensions']))
 
         site.set_api_url('http://awoiaf.westeros.org/api.php', lang='en')
         response = site.responses[site.api_url]
         self.assertEqual(site.api_url, 'http://awoiaf.westeros.org/api.php')
         self.assertEqual(site.api_version, response['api_version'])
-        self.assertEqual(site.extensions, response['extensions'])
+        self.assertEqual(sorted(site.extensions), sorted(response['extensions']))
 
     def test_change_api_url_lang(self):
         ''' test changing the api url with only language '''
         site = MediaWikiOverloaded()
-        self.assertEqual(site.api_url, 'http://en.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://en.wikipedia.org/w/api.php')
         site.set_api_url(lang='fr')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
         self.assertEqual(site.language, 'fr')
 
     def test_change_api_url_lang_upper(self):
         ''' test changing the api url with only language upper case '''
         site = MediaWikiOverloaded()
-        self.assertEqual(site.api_url, 'http://en.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://en.wikipedia.org/w/api.php')
         site.set_api_url(lang='FR')
-        self.assertEqual(site.api_url, 'http://fr.wikipedia.org/w/api.php')
+        self.assertEqual(site.api_url, 'https://fr.wikipedia.org/w/api.php')
         self.assertEqual(site.language, 'fr')
 
     def test_change_user_agent(self):
@@ -194,13 +195,24 @@ class TestMediaWiki(unittest.TestCase):
     def test_default_timeout(self):
         ''' test default timeout '''
         site = MediaWikiOverloaded()
-        self.assertEqual(site.timeout, None)
+        self.assertEqual(site.timeout, 15)
 
     def test_set_timeout(self):
         ''' test setting timeout '''
         site = MediaWikiOverloaded()
         site.timeout = 30
         self.assertEqual(site.timeout, 30)
+
+    def test_set_timeout_none(self):
+        ''' test setting timeout to None '''
+        site = MediaWikiOverloaded()
+        site.timeout = None
+        self.assertEqual(site.timeout, None)
+
+    def test_set_timeout_bad(self):
+        ''' test that we raise the ValueError '''
+        self.assertRaises(ValueError,
+                          lambda: MediaWikiOverloaded(timeout='foo'))
 
     def test_memoized(self):
         ''' test returning the memoized cache '''
@@ -694,6 +706,8 @@ class TestMediaWikiExceptions(unittest.TestCase):
             site.page('bush')
         except DisambiguationError as ex:
             self.assertEqual(ex.message, response['disambiguation_error_msg'])
+            self.assertEqual(ex.title, 'Bush')
+            self.assertEqual(ex.url, 'https://en.wikipedia.org/wiki/Bush')
 
     def test_disamb_error_msg_w_empty(self):
         ''' test that disambiguation error is thrown correctly and no
@@ -746,14 +760,14 @@ class TestMediaWikiExceptions(unittest.TestCase):
     def test_api_url_error(self):
         ''' test changing api url to invalid throws exception '''
         site = MediaWikiOverloaded()
-        url = 'http://french.wikipedia.org/w/api.php'
+        url = 'https://french.wikipedia.org/w/api.php'
         self.assertRaises(MediaWikiAPIURLError,
                           lambda: site.set_api_url(api_url=url, lang='fr'))
 
     def test_api_url_error_msg(self):
         ''' test api url error message on set '''
         site = MediaWikiOverloaded()
-        url = 'http://french.wikipedia.org/w/api.php'
+        url = 'https://french.wikipedia.org/w/api.php'
         try:
             site.set_api_url(api_url=url, lang='fr')
         except MediaWikiAPIURLError as ex:
@@ -762,14 +776,14 @@ class TestMediaWikiExceptions(unittest.TestCase):
 
     def test_api_url_on_init_error(self):
         ''' test api url error on init '''
-        url = 'http://french.wikipedia.org/w/api.php'
+        url = 'https://french.wikipedia.org/w/api.php'
         self.assertRaises(MediaWikiAPIURLError,
                           lambda: MediaWikiOverloaded(url=url, lang='fr'))
 
     def test_api_url_on_init_error_msg(self):
         ''' test api url error message on init '''
         site = MediaWikiOverloaded()  # something to use to lookup results
-        url = 'http://french.wikipedia.org/w/api.php'
+        url = 'https://french.wikipedia.org/w/api.php'
         try:
             MediaWikiOverloaded(url=url, lang='fr')
         except MediaWikiAPIURLError as ex:
@@ -779,8 +793,8 @@ class TestMediaWikiExceptions(unittest.TestCase):
     def test_api_url_on_error_reset(self):
         ''' test api url error resets to original URL '''
         site = MediaWikiOverloaded()  # something to use to lookup results
-        url = 'http://french.wikipedia.org/w/api.php'
-        wiki = 'http://en.wikipedia.org/w/api.php'
+        url = 'https://french.wikipedia.org/w/api.php'
+        wiki = 'https://en.wikipedia.org/w/api.php'
         try:
             MediaWikiOverloaded(url=url, lang='fr')
         except MediaWikiAPIURLError:
@@ -1251,8 +1265,8 @@ class TestMediaWikiCategoryTree(unittest.TestCase):
         try:
             site.categorytree('Chess', depth=0)
         except ValueError as ex:
-            msg = ("CategoryTree: Parameter 'depth' must None (for the full "
-                   "tree) be greater than 0")
+            msg = ("CategoryTree: Parameter 'depth' must be either None "
+                   "(for the full tree) or be greater than 0")
             self.assertEqual(str(ex), msg)
 
     def test_depth_none_1(self):
@@ -1267,7 +1281,7 @@ class TestMediaWikiCategoryTree(unittest.TestCase):
         site = MediaWikiOverloaded()
         cat = site.categorytree(['Ebola'], depth=None)
         depth = find_depth(cat['Ebola'])
-        self.assertEqual(depth, 2)
+        self.assertEqual(depth, 1)
 
     def test_depth_limited(self):
         ''' test the depth when going partial depth '''
@@ -1472,6 +1486,14 @@ class TestMediaWikiRegressions(unittest.TestCase):
             self.assertEqual(str(ex), res1)
         else:
             self.assertEqual(True, False)
+
+    def test_query_continue(self):
+        site = MediaWikiOverloaded(url='http://practicalplants.org/w/api.php')
+        res = site.responses[site.api_url]['query-continue-find']
+
+        cat_membs = site.categorymembers('Plant', results=None, subcategories=False)
+        self.assertEqual(cat_membs, res)
+        self.assertEqual(len(cat_membs), 7415)
 
 
 class TestMediaWikiUtilities(unittest.TestCase):

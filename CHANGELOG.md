@@ -1,6 +1,23 @@
 # MediaWiki Changelog
 
-## Current
+## Version 0.4.1
+
+* Default to `https`
+* Add `category_prefix` property to properly support categories in non-Engish
+MediaWiki sites [issue #48](https://github.com/barrust/mediawiki/issues/48)
+* Add `user_agent` as an initialization parameter and added information to the
+documentation about why one should set the user-agent string [issue #50](https://github.com/barrust/mediawiki/issues/50)
+
+### Version 0.4.0
+
+* Add fix to use the `query-continue` parameter to continue to pull category
+members [issue #39](https://github.com/barrust/mediawiki/issues/39)
+* Better handle large categorymember selections
+* Add better handling of exception attributes including adding them to the
+documentation
+* Correct the pulling of the section titles without additional markup [issue #42](https://github.com/barrust/mediawiki/issues/42)
+* Handle memoization of unicode parameters in python 2.7
+* ***Change default timeout*** for HTTP requests to 15 seconds
 
 ### Version 0.3.16
 

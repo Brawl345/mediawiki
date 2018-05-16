@@ -48,7 +48,7 @@ def capture_response(func):
 
 class MediaWikiOverloaded(MediaWiki):
     ''' overloaded mediawiki class '''
-    def __init__(self, url='http://{lang}.wikipedia.org/w/api.php', lang='en',
+    def __init__(self, url='https://{lang}.wikipedia.org/w/api.php', lang='en',
                  timeout=None, rate_limit=False,
                  rate_limit_wait=timedelta(milliseconds=50)):
         ''' overloaded init '''
@@ -87,6 +87,7 @@ PULL_SECTION_LINKS = False
 PULL_ISSUE_15 = False
 PULL_ISSUE_14 = False
 PULL_ISSUE_35 = False
+PULL_ISSUE_39 = False
 
 # make files if they don't exist
 if not os.path.isfile(REQUESTS_FILE):
@@ -102,11 +103,13 @@ else:
 
 # Begin building out new data objects
 site = MediaWikiOverloaded()
-french_site = MediaWikiOverloaded(url='http://fr.wikipedia.org/w/api.php',
+french_site = MediaWikiOverloaded(url='https://fr.wikipedia.org/w/api.php',
                                   lang='fr')
 asoiaf = MediaWikiOverloaded(url='http://awoiaf.westeros.org/api.php',
                              lang='fr')
+plants = MediaWikiOverloaded(url='http://practicalplants.org/w/api.php')
 wikipedia = MediaWikiOverloaded()
+
 
 # ensure these pieces of information do not throw errors
 if site.api_url not in responses:
@@ -140,6 +143,9 @@ responses[asoiaf.api_url]['lang'] = asoiaf.language
 responses[asoiaf.api_url]['languages'] = asoiaf.supported_languages
 responses[asoiaf.api_url]['api_version'] = asoiaf.api_version
 responses[asoiaf.api_url]['extensions'] = asoiaf.extensions
+
+if plants.api_url not in responses:
+    responses[plants.api_url] = dict()
 
 print("Completed basic mediawiki information")
 
@@ -290,7 +296,7 @@ if PULL_ALL is True or PULL_DISAMBIGUATION_ERRORS is True:
     print("Completed pulling disambiguation errors")
 
 if PULL_ALL is True or PULL_API_URL_ERROR is True:
-    url = 'http://french.wikipedia.org/w/api.php'
+    url = 'https://french.wikipedia.org/w/api.php'
     try:
         site.set_api_url(api_url=url, lang='fr')
     except MediaWikiAPIURLError as ex:
@@ -298,7 +304,7 @@ if PULL_ALL is True or PULL_API_URL_ERROR is True:
 
     # this shouldn't be necessary since it should go back to the original
     # values
-    site.set_api_url(api_url='http://en.wikipedia.org/w/api.php', lang='en')
+    site.set_api_url(api_url='https://en.wikipedia.org/w/api.php', lang='en')
     print("Completed pulling api url errors")
 
 if PULL_ALL is True or PULL_REDIRECT_ERROR is True:
@@ -444,6 +450,12 @@ if PULL_ALL is True or PULL_ISSUE_35 is True:
         responses[wikipedia.api_url]['missing_title_disamb_msg'] = str(ex)
 
     print("Completed pulling issue 35")
+
+if PULL_ALL is True or PULL_ISSUE_39 is True:
+    res = plants.categorymembers('Plant', results=None, subcategories=False)
+    responses[plants.api_url]['query-continue-find'] = res
+
+    print("Completed pulling issue 39")
 
 # dump data to file
 with open(RESPONSES_FILE, 'w') as mock:
